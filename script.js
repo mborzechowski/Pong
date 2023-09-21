@@ -19,6 +19,16 @@ const BALL_START_X = CANVAS_WIDTH / 2;
 const BALL_START_Y = CANVAS_HEIGHT / 2;
 const BALL_START_DX = 4.5; // początkowa prędkość lotu piłeczki na współrzędnej x
 const BALL_START_DY = 1.5 // początkowa prędkość lotu piłeczki na współrzeędnej y
+const STATE_CHANGE_INTERVAL = 20;
+
+let ballX = BALL_START_X;
+let ballY = BALL_START_Y;
+let ballDX = BALL_START_DX;
+let ballDY = BALL_START_DY;
+let p1PaddleY = PADDLE_START_Y
+let p2PaddleY = PADDLE_START_Y;
+let p1Points = 0;
+let p2Points = 0;
 
 
 ctx.font = "30px Arial"
@@ -27,8 +37,8 @@ function drawPaddle(x, y) {
     ctx.fillRect(x, y, 20, 100)
 }
 
-function drawText(text, x, y) {
-    ctx.fillText(text, x, y);
+function drawPoints(text, x) {
+    ctx.fillText(text, x, BOARD_Y);
 }
 
 function drawCircle(x, y, r) {
@@ -38,10 +48,39 @@ function drawCircle(x, y, r) {
     ctx.fill();
 }
 
+function drawBall(x, y) {
+    drawCircle(x, y, BALL_R);
+}
+
+function drawState() {
+    clearCanvas();
+    drawPoints(p1Points.toString(), BOARD_P1_X);
+    drawPoints(p2Points.toString(), BOARD_P2_X);
+    drawBall(ballX, ballY);
+    drawPaddle(PADDLE_P1_X, p1PaddleY);
+    drawPaddle(PADDLE_P2_X, p2PaddleY);
+}
 
 function clearCanvas() {
     ctx.clearRect(0,0, canvas.width, canvas.height);
 }
+
+function updateState(){
+    ballX = ballX + ballDX;
+    ballY = ballY + ballDY;
+
+    p1PaddleY++;
+    p2PaddleY--;
+    p1Points++;
+    p2Points += 3;
+}
+
+function updateAndDrawState() {
+    updateState();
+    drawState();
+}
+
+setInterval(updateAndDrawState, STATE_CHANGE_INTERVAL);
 
 drawPaddle(770, 100);
 drawPaddle(10, 300);
