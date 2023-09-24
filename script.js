@@ -21,6 +21,22 @@ const BALL_START_DX = 4.5; // początkowa prędkość lotu piłeczki na współr
 const BALL_START_DY = 1.5 // początkowa prędkość lotu piłeczki na współrzeędnej y
 const STATE_CHANGE_INTERVAL = 20;
 
+const PADDLE_STEP = 5;
+const P1_UP_BUTTON = 'KeyQ';
+const P2_UP_BUTTON = 'KeyP';
+const P1_DOWN_BUTTON = 'KeyA';
+const P2_DOWN_BUTTON = 'KeyL';
+const PAUSE_BUTTON = 'KeyB';
+
+const UP_ACTION = 'up';
+const DOWN_ACTION = 'down';
+const STOP_ACTION = 'stop';
+
+let paused = false
+
+let p1Action = STOP_ACTION;
+let p2Action = STOP_ACTION;
+
 let ballX = BALL_START_X;
 let ballY = BALL_START_Y;
 let ballDX = BALL_START_DX;
@@ -62,32 +78,76 @@ function drawState() {
 }
 
 function clearCanvas() {
-    ctx.clearRect(0,0, canvas.width, canvas.height);
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
 }
 
-function updateState(){
+function updateState() {
+    movePaddles()
+
     ballX = ballX + ballDX;
     ballY = ballY + ballDY;
 
-    p1PaddleY++;
-    p2PaddleY--;
-    p1Points++;
-    p2Points += 3;
+
 }
 
 function updateAndDrawState() {
+    if (paused) return;
     updateState();
     drawState();
+
 }
 
 setInterval(updateAndDrawState, STATE_CHANGE_INTERVAL);
 
-drawPaddle(770, 100);
-drawPaddle(10, 300);
 
-drawText('3', 300, 50);
-drawText('6', 500, 50);
+window.addEventListener('keydown', function (event) {
+    let code = event.code;
+    if (code === P1_UP_BUTTON) {
+        p1Action = UP_ACTION;
+    } else if (code === P1_DOWN_BUTTON) {
+        p1Action = DOWN_ACTION;
+    } else if (code === P2_UP_BUTTON) {
+        p2Action = UP_ACTION;
+    } else if (code === P2_DOWN_BUTTON) {
+        p2Action = DOWN_ACTION;
+    }
+    if (code === PAUSE_BUTTON) {
+        paused = !paused;
+    }
+});
 
-drawCircle(400,250,10);
+window.addEventListener('keyup', function (event) {
+    let code = event.code;
+    if ((code === P1_UP_BUTTON && p1Action === UP_ACTION) || (code === P1_DOWN_BUTTON && p1Action === DOWN_ACTION)) {
+        p1Action = STOP_ACTION;
+    } else if ((code === P2_UP_BUTTON && p2Action === UP_ACTION) || (code === P2_DOWN_BUTTON && p2Action === DOWN_ACTION)) {
+        p2Action = STOP_ACTION;
+    }
+})
 
+
+function coerceIn(value, min, max) {
+    return Math.max(Math.min(value, max), min);
+}
+
+function coercePaddle(paddleY) {
+    const minPaddleY = 0;
+    const maxPaddleY = CANVAS_HEIGHT - PADDLE_HEIGHT;
+    return coerceIn(paddleY, minPaddleY, maxPaddleY)
+}
+
+function movePaddles() {
+
+    if (p1Action === UP_ACTION) {
+        p1PaddleY = coercePaddle(p1PaddleY - PADDLE_STEP);
+    } else if (p1Action === DOWN_ACTION) {
+        p1PaddleY = coercePaddle(p1PaddleY + PADDLE_STEP);
+    }
+
+    if (p2Action === UP_ACTION) {
+        p2PaddleY = coercePaddle(p2PaddleY - PADDLE_STEP);
+    } else if (p2Action === DOWN_ACTION) {
+        p2PaddleY = coercePaddle(p2PaddleY + PADDLE_STEP);
+    }
+}
 
