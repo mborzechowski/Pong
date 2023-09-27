@@ -32,25 +32,32 @@ const UP_ACTION = 'up';
 const DOWN_ACTION = 'down';
 const STOP_ACTION = 'stop';
 
-let paused = false
-
-let p1Action = STOP_ACTION;
-let p2Action = STOP_ACTION;
-
-let ballX = BALL_START_X;
-let ballY = BALL_START_Y;
-let ballDX = BALL_START_DX;
-let ballDY = BALL_START_DY;
-let p1PaddleY = PADDLE_START_Y
-let p2PaddleY = PADDLE_START_Y;
-let p1Points = 0;
-let p2Points = 0;
-
-
 ctx.font = "30px Arial"
 
+// pomocnicze
+function isInBetween(value, min, max) {
+    return value >= min && value <= max;
+}
+
+// function coerceIn(value, min, max) {
+//     return Math.max(Math.min(value, max), min);
+// }
+
+function coerceIn(value, min, max) {
+    if (value <= min) {
+        return min;
+    } else if (value >= max) {
+        return max;
+    } else {
+        return value;
+    }
+}
+
+
+// funkcje do rysowania
+
 function drawPaddle(x, y) {
-    ctx.fillRect(x, y, 20, 100)
+    ctx.fillRect(x, y, PADDLE_WIDTH, PADDLE_HEIGHT)
 }
 
 function drawPoints(text, x) {
@@ -68,37 +75,15 @@ function drawBall(x, y) {
     drawCircle(x, y, BALL_R);
 }
 
-function drawState() {
-    clearCanvas();
-    drawPoints(p1Points.toString(), BOARD_P1_X);
-    drawPoints(p2Points.toString(), BOARD_P2_X);
-    drawBall(ballX, ballY);
-    drawPaddle(PADDLE_P1_X, p1PaddleY);
-    drawPaddle(PADDLE_P2_X, p2PaddleY);
-}
-
 function clearCanvas() {
     ctx.clearRect(0, 0, canvas.width, canvas.height);
 }
 
-function updateState() {
-    movePaddles()
+//Input
 
-    ballX = ballX + ballDX;
-    ballY = ballY + ballDY;
-
-
-}
-
-function updateAndDrawState() {
-    if (paused) return;
-    updateState();
-    drawState();
-
-}
-
-setInterval(updateAndDrawState, STATE_CHANGE_INTERVAL);
-
+let paused = false
+let p1Action = STOP_ACTION;
+let p2Action = STOP_ACTION;
 
 window.addEventListener('keydown', function (event) {
     let code = event.code;
@@ -125,10 +110,16 @@ window.addEventListener('keyup', function (event) {
     }
 })
 
+// State
 
-function coerceIn(value, min, max) {
-    return Math.max(Math.min(value, max), min);
-}
+let ballX = BALL_START_X;
+let ballY = BALL_START_Y;
+let ballDX = BALL_START_DX;
+let ballDY = BALL_START_DY;
+let p1PaddleY = PADDLE_START_Y
+let p2PaddleY = PADDLE_START_Y;
+let p1Points = 0;
+let p2Points = 0;
 
 function coercePaddle(paddleY) {
     const minPaddleY = 0;
@@ -137,7 +128,6 @@ function coercePaddle(paddleY) {
 }
 
 function movePaddles() {
-
     if (p1Action === UP_ACTION) {
         p1PaddleY = coercePaddle(p1PaddleY - PADDLE_STEP);
     } else if (p1Action === DOWN_ACTION) {
@@ -151,3 +141,89 @@ function movePaddles() {
     }
 }
 
+function shouldBounceBallFromTopWall() {
+    return ballY < BALL_R && ballDY < 0;
+}
+
+function shouldBounceBallFromBottomWall() {
+    return ballY + BALL_R >= CANVAS_HEIGHT && ballDY > 0;
+}
+
+function moveBallByStep() {
+    ballX += ballDX;
+    ballY += ballDY;
+}
+
+function bounceBallFromWall() {
+    ballDY = -ballDY;
+}
+
+function bounceBallFromPaddle() {
+    ballDX = -ballDX;
+}
+
+function moveBallToStart() {
+    ballX = BALL_START_X;
+    ballY = BALL_START_Y;
+}
+
+function ballIsOutOnLeft() {
+    return ballX + BALL_R <= 0;
+}
+
+function ballIsOutOnRight() {
+    return ballX - BALL_R >= CANVAS_WIDTH;
+}
+
+function isBallOnTheSameHeightAsPaddle(paddleY) {
+    return isInBetween(ballY, paddleY, paddleY + PADDLE_HEIGHT)
+}
+
+function shouldBounceFromLeftPaddle() {
+    return ballDX < 0 && isInBetween(ballX - BALL_R, PADDLE_P1_X, PADDLE_P1_X + PADDLE_WIDTH) && isBallOnTheSameHeightAsPaddle(p1PaddleY);
+}
+
+function shouldBounceFromRightPaddle() {
+    return ballDX > 0 && isInBetween(ballX + BALL_R, PADDLE_P2_X, PADDLE_P2_X + PADDLE_WIDTH) && isBallOnTheSameHeightAsPaddle(p2PaddleY);
+}
+
+function moveBall() {
+    if (shouldBounceBallFromBottomWall() || shouldBounceBallFromTopWall()) {
+        bounceBallFromWall()
+    }
+    if (shouldBounceFromLeftPaddle() || shouldBounceFromRightPaddle()) {
+        bounceBallFromPaddle();
+    }
+
+    if (ballIsOutOnLeft()) {
+        moveBallToStart();
+        p2Points++;
+    } else if (ballIsOutOnRight()) {
+        moveBallToStart();
+        p1Points++;
+    }
+
+    moveBallByStep();
+}
+
+function updateState() {
+    movePaddles()
+    moveBall()
+}
+
+function drawState() {
+    clearCanvas();
+    drawPoints(p1Points.toString(), BOARD_P1_X);
+    drawPoints(p2Points.toString(), BOARD_P2_X);
+    drawBall(ballX, ballY);
+    drawPaddle(PADDLE_P1_X, p1PaddleY);
+    drawPaddle(PADDLE_P2_X, p2PaddleY);
+}
+
+function updateAndDrawState() {
+    if (paused) return;
+    updateState();
+    drawState();
+}
+
+setInterval(updateAndDrawState, STATE_CHANGE_INTERVAL);
